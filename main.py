@@ -1,18 +1,23 @@
-
 import netmiko as nk
 import requests as rq
 import time as tm
 import datetime as dt
 import threading as td
 from tkinter import *
+import json
 
 # replace here -- the backend url
-urlAPI = 'https://appaforo.loca.lt/api'
+urlAPI = 'https://backend-aforo.herokuapp.com/api'
 
 network_token = ''
 wlc_mac_list = []
 wlc_list = []
 
+
+headers = {
+    'Content-type':'application/json',
+    'Accept':'application/json'
+}
 
 def network_validation():
     value = network_entry.get()
@@ -88,23 +93,24 @@ def wlc_validation():
 def wlc_finish():
     for wlc in wlc_list:
         try:
-            rq.post(urlAPI + '/wlcs', {
+            rq.post(urlAPI + '/wlcs', json.dumps({
                     'network_id': network_token,
                     'mac': wlc["mac"],
                     'manufacturer_name': 'none',
-                    'product_name': wlc["name"]})
+                    'product_name': wlc["name"]}),headers=headers)
+            print(wlc)
             connection = wlc["connection"]
             ap_ssh = connection.send_command("show ap summary")
             ap_summary_lines = ap_ssh.splitlines()[10::1]
             for item in ap_summary_lines:
                 item = item.split()
                 try:
-                    rq.post(urlAPI + '/aps', {
+                    rq.post(urlAPI + '/aps', json.dumps({
                             'wlc_id': wlc["mac"],
                             'mac': item[3],
                             'name': item[0],
                             'model': item[2],
-                            'network_id': network_token})
+                            'network_id': network_token}),headers=headers)
                     wlc["aps"][item[3]] = {"date": dt.datetime.now(), "devices": "0", "limit": "0"}
                 except Exception as e:
                     print(e)
@@ -132,22 +138,22 @@ def init_function():
                         limit_app = response.json()['data']['limit']
                         devic_app = response.json()['data']['devices']
                         activ_app = response.json()['data']['active']
-                        updateDevices = rq.put(urlAPI + '/aps/' + ap[3] + '/devices', {'devices': devic_ssh})
+                        updateDevices = rq.put(urlAPI + '/aps/' + ap[3] + '/devices', json.dumps({'devices': devic_ssh}),headers=headers)
                         if int(limit_app) <= int(devic_ssh):
 
                             print('updateActive to 1')
-                            updateDevices = rq.put(urlAPI + '/aps/'+ap[3]+'/active', {'active': '1'})
+                            updateDevices = rq.put(urlAPI + '/aps/'+ap[3]+'/active', json.dumps({'active': '1'}),headers=headers)
                             saved_date = wlc["aps"][ap[3]]["date"]
-                            updateActive = rq.put(urlAPI + '/aps/'+ap[3]+'/active', {'active': '1'})
+                            updateActive = rq.put(urlAPI + '/aps/'+ap[3]+'/active', json.dumps({'active': '1'}),headers=headers)
                             now = dt.datetime.now()
                             date = str(now.day) + "/" + str(now.month) + "/" + str(now.year)
                             hour = str(now.hour) + ":" + str(now.minute)
-                            response = rq.post(urlAPI + '/alerts', {
+                            response = rq.post(urlAPI + '/alerts', json.dumps({
                                     "network_id": network_token,
                                     "area": ap[0],
                                     "hour": hour,
                                     "date": date,
-                                    "device_number": ap[8]})
+                                    "device_number": ap[8]}),headers=headers)
                             print(response.status_code)
                     except Exception as e:
                         print(e)
@@ -161,7 +167,7 @@ root.configure(background='#efdad5')
 root.geometry("400x330")
 root.resizable(False, False)
 root.title("Tinkvice SSH")
-root.wm_iconbitmap('ic_appbar.ico')
+#root.wm_iconbitmap('./icon.ico')
 
 network_label = Label(root, font="Times 12", text="Ingreso de token de red", background='#efdad5')
 network_entry = Entry(root)
