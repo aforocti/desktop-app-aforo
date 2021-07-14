@@ -147,7 +147,7 @@ def init_function():
                             updateActive = rq.put(urlAPI + '/aps/'+ap[3]+'/active', json.dumps({'active': '1'}),headers=headers)
                             now = dt.datetime.now()
                             date = str(now.day) + "/" + str(now.month) + "/" + str(now.year)
-                            hour = str(now.hour) + ":" + str(now.minute)
+                            hour = str(now.hour) + ":" + str(now.minute) + ":" + str(now.second)
                             response = rq.post(urlAPI + '/alerts', json.dumps({
                                     "network_id": network_token,
                                     "area": ap[0],
