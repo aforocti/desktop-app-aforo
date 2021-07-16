@@ -101,7 +101,8 @@ def wlc_finish():
             print(wlc)
             connection = wlc["connection"]
             ap_ssh = connection.send_command("show ap summary")
-            ap_summary_lines = ap_ssh.splitlines()[10::1]
+            ap_summary_lines = ap_ssh.splitlines()[8::1]
+            print(ap_summary_lines)
             for item in ap_summary_lines:
                 item = item.split()
                 try:
@@ -127,7 +128,7 @@ def init_function():
             connection = wlc["connection"]
             try:
                 ap_ssh = connection.send_command("show ap summary")
-                ap_list = ap_ssh.splitlines()[10::1]
+                ap_list = ap_ssh.splitlines()[8::1]
                 print("==========================================================")
                 for ap in ap_list:
                     ap = ap.split()
@@ -154,7 +155,6 @@ def init_function():
                                     "hour": hour,
                                     "date": date,
                                     "device_number": ap[8]}),headers=headers)
-                            print(response.status_code)
                     except Exception as e:
                         print(e)
             except Exception as e:
