@@ -140,10 +140,8 @@ def init_function():
                         devic_app = response.json()['data']['devices']
                         activ_app = response.json()['data']['active']
                         updateDevices = rq.put(urlAPI + '/aps/' + ap[3] + '/devices', json.dumps({'devices': devic_ssh}),headers=headers)
-                        if int(limit_app) <= int(devic_ssh):
-
+                        if int(limit_app) <= int(devic_ssh) and activ_app == "0":
                             print('updateActive to 1')
-                            updateDevices = rq.put(urlAPI + '/aps/'+ap[3]+'/active', json.dumps({'active': '1'}),headers=headers)
                             saved_date = wlc["aps"][ap[3]]["date"]
                             updateActive = rq.put(urlAPI + '/aps/'+ap[3]+'/active', json.dumps({'active': '1'}),headers=headers)
                             now = dt.datetime.now()
@@ -155,6 +153,10 @@ def init_function():
                                     "hour": hour,
                                     "date": date,
                                     "device_number": ap[8]}),headers=headers)
+                        elif int(limit_app) > int(devic_ssh) and activ_app == "1":
+                            updateActive = rq.put(urlAPI + '/aps/'+ap[3]+'/active', json.dumps({'active': '0'}),headers=headers)
+                        else:
+                            print("====Alerta Enviada====")
                     except Exception as e:
                         print(e)
             except Exception as e:
