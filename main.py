@@ -155,7 +155,7 @@ def init_function():
                                     "device_number": ap[8]}),headers=headers)
                         elif int(limit_app) > int(devic_ssh) and activ_app == "1":
                             updateActive = rq.put(urlAPI + '/aps/'+ap[3]+'/active', json.dumps({'active': '0'}),headers=headers)
-                        else:
+                        elif int(limit_app) <= int(devic_ssh) and activ_app == "1":
                             print("====Alerta Enviada====")
                     except Exception as e:
                         print(e)
