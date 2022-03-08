@@ -1,0 +1,31 @@
+import netmiko as nk
+
+wlc1_credentials = {
+            'ip': "192.168.64.100",
+            'device_type': "cisco_ios",
+            'username': "user",
+            'password': "76sU5sd76$G"}
+
+wlc2_credentials = {
+            'ip': "192.168.64.88",
+            'device_type': "cisco_wlc_ssh",
+            'username': "user",
+            'password': "76sU5sd76$G"}
+
+
+try:
+    connection1 = nk.ConnectHandler(**wlc1_credentials)
+    ap_ssh = connection1.send_command("show ap summary")
+    print("*********WLC1**********")
+    print(ap_ssh)
+except Exception as e:
+    print(e)
+
+try:
+    connection2 = nk.ConnectHandler(**wlc2_credentials)
+    ap_ssh = connection2.send_command("show ap summary")
+    print("*********WLC2**********")
+    print(ap_ssh)
+except Exception as e:
+    print(e)
+    

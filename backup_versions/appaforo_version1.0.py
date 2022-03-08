@@ -8,7 +8,7 @@ import json
 
 # replace here -- the backend url
 urlAPI = 'https://backend-aforo.herokuapp.com/api'
-
+#urlAPI = 'http://localhost:3000/api'
 network_token = ''
 wlc_mac_list = []
 wlc_list = []
@@ -91,6 +91,7 @@ def wlc_validation():
 
 
 def wlc_finish():
+    txt = "Global AP Dot1x EAP Method....................... EAP-FAST"
     for wlc in wlc_list:
         try:
             rq.post(urlAPI + '/wlcs', json.dumps({
@@ -98,11 +99,12 @@ def wlc_finish():
                     'mac': wlc["mac"],
                     'manufacturer_name': 'none',
                     'product_name': wlc["name"]}),headers=headers)
-            print(wlc)
             connection = wlc["connection"]
             ap_ssh = connection.send_command("show ap summary")
-            ap_summary_lines = ap_ssh.splitlines()[8::1]
-            print(ap_summary_lines)
+            splitlines = ap_ssh.splitlines()
+            if txt in splitlines:
+                splitlines.remove(txt)
+            ap_summary_lines = splitlines[7::1]
             for item in ap_summary_lines:
                 item = item.split()
                 try:
@@ -123,14 +125,21 @@ def wlc_finish():
 
 
 def init_function():
+    txt = "Global AP Dot1x EAP Method....................... EAP-FAST"
+    print("***Starting scanning***")
+    id = 1
     while True:
         for wlc in wlc_list:
             connection = wlc["connection"]
             try:
                 ap_ssh = connection.send_command("show ap summary")
-                ap_list = ap_ssh.splitlines()[8::1]
+                splitlines = ap_ssh.splitlines()
+                if txt in splitlines:
+                    splitlines.remove(txt)
+                ap_list = splitlines[7::1]
                 print("==========================================================")
                 for ap in ap_list:
+                    print(ap)
                     ap = ap.split()
                     devic_ssh = ap[8]
                     limit_prev = wlc["aps"][ap[3]]["limit"]
@@ -140,27 +149,53 @@ def init_function():
                         devic_app = response.json()['data']['devices']
                         activ_app = response.json()['data']['active']
                         updateDevices = rq.put(urlAPI + '/aps/' + ap[3] + '/devices', json.dumps({'devices': devic_ssh}),headers=headers)
-                        if int(limit_app) <= int(devic_ssh) and activ_app == "0":
+                        
+                        now = dt.datetime.now()
+                        date = str(now.day) + "/" + str(now.month) + "/" + str(now.year)
+                        hour = str(now.hour) + ":" + str(now.minute) + ":" + str(now.second)
+
+
+                        #Codigo para controlar a las peersonas.
+                        body = {
+                            "nombre": ap[0],
+                            "hora": hour,
+                            "devices": devic_ssh,
+                            "fecha": date
+                        }
+                        guardardatos = rq.put(urlAPI + '/aps/guardar/'+ str(id), json.dumps(body),headers=headers)
+                        
+                        if int(limit_app) <= int(devic_ssh):
                             print('updateActive to 1')
                             saved_date = wlc["aps"][ap[3]]["date"]
                             updateActive = rq.put(urlAPI + '/aps/'+ap[3]+'/active', json.dumps({'active': '1'}),headers=headers)
-                            now = dt.datetime.now()
-                            date = str(now.day) + "/" + str(now.month) + "/" + str(now.year)
-                            hour = str(now.hour) + ":" + str(now.minute) + ":" + str(now.second)
                             response = rq.post(urlAPI + '/alerts', json.dumps({
                                     "network_id": network_token,
                                     "area": ap[0],
                                     "hour": hour,
                                     "date": date,
                                     "device_number": ap[8]}),headers=headers)
-                        elif int(limit_app) > int(devic_ssh) and activ_app == "1":
+                        elif int(limit_app) > int(devic_ssh):
                             updateActive = rq.put(urlAPI + '/aps/'+ap[3]+'/active', json.dumps({'active': '0'}),headers=headers)
-                        elif int(limit_app) <= int(devic_ssh) and activ_app == "1":
+                        elif int(limit_app) <= int(devic_ssh):
                             print("====Alerta Enviada====")
                     except Exception as e:
                         print(e)
             except Exception as e:
                 print(e)
+        for wlc in wlc_list:
+            connection = wlc["connection"]
+            try:
+                now = dt.datetime.now()
+                date = str(now.day) + "/" + str(now.month) + "/" + str(now.year)
+                hour = str(now.hour) + ":" + str(now.minute) + ":" + str(now.second)
+                ap_ssh = connection.send_command("show client summary username")
+                splitlines = ap_ssh.splitlines()[5:]
+                line = date + ","+hour+","+",".join(splitlines)+"\n"
+                with open("./report.txt", "a") as csvfile:
+                    csvfile.write(line)
+            except Exception as e:
+                print(e)
+        id = id + 1
         tm.sleep(25)
 
 
